@@ -1,0 +1,22 @@
+---
+title: "binscatter"
+author: "Austin Kennedy"
+date: "11/11/2022"
+output: html_document
+---
+
+```{r Clear memory and setup}
+rm(list=ls())
+options(scipen=999)
+```
+
+```{r Packages}
+library(tidyverse)
+library(ggplot2)
+source("../temporary/stat_binscatter.R")
+library(data.table)
+```
+
+
+```{r Create Bins}
+
