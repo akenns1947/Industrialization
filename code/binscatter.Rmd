@@ -16,7 +16,67 @@ library(ggplot2)
 source("../temporary/stat_binscatter.R")
 library(data.table)
 ```
+```{r Load Data}
+data <- read.csv('../temporary/volumes_opt_industry.csv')
+```
+
+
 
 
 ```{r Create Bins}
+breaks <- seq(1500, 1900, by = 25)
+tags <- seq(1500, 1875, by = 25)
+```
+
+```{r bin volumes}
+bins <- cut(data$Year_rounded,
+            breaks = breaks,
+            include.lowest = TRUE,
+            right = FALSE,
+            labels = tags
+            )
+
+data$year_group <- factor(bins,
+                     levels = tags,
+                     ordered = TRUE)
+```
+
+```{r Bin Scatter Plots}
+
+for (i in tags){
+  df <- data %>% filter(year_group == i)
+  
+  fig <- ggplot(df, aes(x = industry, y = Optimism)) +
+    # geom_point(alpha = .1) +
+    # geom_smooth(method = "lm", se = FALSE) +
+    xlim(0,1.5) +
+    stat_binscatter(color = "red", geom = "pointrange")
+  
+  
+  show(fig)
+  path <- sprintf('../output/bin_scatters/%s.png', i)
+  ggsave(path)
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
