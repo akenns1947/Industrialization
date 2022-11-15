@@ -24,8 +24,13 @@ data <- read.csv('../temporary/volumes_opt_industry.csv')
 
 
 ```{r Create Bins}
-breaks <- seq(1500, 1900, by = 25)
-tags <- seq(1500, 1875, by = 25)
+start <- 1500
+end <- 1900
+interval <- 25
+
+breaks <- seq(start, end, by = interval)
+tags <- seq(start, end - 25, by = interval)
+label <- sprintf(paste0(tags, "-", tags+(interval - 1)))
 ```
 
 ```{r bin volumes}
@@ -33,24 +38,27 @@ bins <- cut(data$Year_rounded,
             breaks = breaks,
             include.lowest = TRUE,
             right = FALSE,
-            labels = tags
+            labels = label
             )
 
 data$year_group <- factor(bins,
-                     levels = tags,
+                     levels = label,
                      ordered = TRUE)
 ```
 
 ```{r Bin Scatter Plots}
 
-for (i in tags){
+for (i in label){
   df <- data %>% filter(year_group == i)
   
-  fig <- ggplot(df, aes(x = industry, y = Optimism)) +
+  fig <- ggplot(df, aes(x = industry_percentile, y = optimism_percentile)) +
     # geom_point(alpha = .1) +
-    # geom_smooth(method = "lm", se = FALSE) +
-    xlim(0,1.5) +
-    stat_binscatter(color = "red", geom = "pointrange")
+    geom_smooth(method = "lm", se = FALSE) +
+    xlim(0,1) +
+    # ylim(0.25,0.7) +
+    stat_binscatter(color = "red", geom = "pointrange") +
+    labs(title = i, x = "Industry (Percentile)", y = "Optimism (Percentile)") +
+    theme_bw()
   
   
   show(fig)

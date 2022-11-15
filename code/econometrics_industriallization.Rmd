@@ -1,0 +1,106 @@
+---
+title: "econometrics_industrialization"
+author: "Austin Kennedy"
+date: "11/15/2022"
+output: html_document
+---
+
+```{r Clear memory and setup}
+rm(list=ls())
+options(scipen=999)
+```
+
+```{r Load Packages}
+
+library(tidyverse)
+library(fixest)
+library(data.table)
+library(broom)
+library(modelsummary)
+library(msm)
+library(ggpubr)
+
+```
+
+
+```{r Load Data}
+volumes <- read.csv('../temporary/volumes_opt_industry.csv')
+```
+
+```{r Clean up}
+volumes <- volumes[,-1] #Drops 'X' which is just the index attached by Python
+```
+
+```{r Create years and bins}
+years <- seq(1510,1890, by=1)
+bins <- seq(1610, 1890, by = 20)
+```
+
+```{r Assign volumes to bins}
+volumes <- volumes[volumes$Year_rounded >= (min(bins) - 10),]
+#Merge volume years to closest bin
+a = data.table(Value=volumes$Year_rounded) #Extract years
+a[,merge:=Value] #Give data.table something to merge on
+b = data.table(Value = bins)
+b[,merge:=Value]
+setkeyv(a, c('merge')) #Sort for quicker merge
+setkeyv(b, c('merge'))
+rounded = b[a, roll='nearest'] #Merge to nearest
+rounded <- distinct(rounded) #Get distinct values for easier merge to 'volumes'
+# volumes <- data.table(volumes)
+volumes <- merge(volumes, rounded, by.x = "Year_rounded", by.y = "merge")
+#Remove unnecessary column
+volumes <- volumes %>%
+  subset(select = -c(i.Value)) %>%
+  rename(bin_20 = Value)
+```
+
+
+```{r Regressions}
+mod1 <- volumes %>% group_by(bin_20) %>%
+  do(x = lm(optimism_percentile ~ Science*Religion*industry_percentile + Science*Political.Economy*industry_percentile + Religion*Political.Economy*industry_percentile - Religion, data = .))
+```
+
+
+```{r Extract results}
+models <- list()
+
+for (i in 1:length(bins)){
+    mod_tmp <- mod1$x[[i]] #capture models for output table
+    models[[toString(bins[[i]])]] <- mod_tmp
+}
+
+```
+
+```{r Output Tables}
+
+# omit <- c("(Intercept)|Science|industry_percentile|Political.Economy|Science:Religion|Science:industry_percentile|Religion:industry_percentile|Science:Political.Economy|Religion:Political.Economy")
+
+omit <- c("(Intercept)|Science:Religion")
+
+cm <- c("Science:Religion:industry_percentile" = "$\\text{Science} \\times \\text{Religion} \\times \\text{Industry}$", "Science:industry_percentile:Political.Economy" = "$\\text{Science} \\times \\text{PolitEcon} \\times \\text{Industry}$", "Religion:industry_percentile:Political.Economy" = "$\\text{Religion} \\times \\text{PolitEcon} \\times \\text{Industry}$")
+
+modelsummary(models[1:8],
+             stars = TRUE,
+             gof_omit = "R2 Within|R2 P|Log|AIC|BIC|RMSE",
+             coef_map = cm,
+             title = "Dependent Variable: Optimism Percentile",
+             output="../output/mod1_1.tex",
+             escape = FALSE)
+
+modelsummary(models[9:15],
+             stars = TRUE,
+             gof_omit = "R2 Within|R2 P|Log|AIC|BIC|RMSE",
+             coef_map = cm,
+             title = "Dependent Variable: Optimism Percentile",
+             output="../output/mod1_2.tex",
+             escape = FALSE)
+
+```
+
+
+
+
+
+
+
