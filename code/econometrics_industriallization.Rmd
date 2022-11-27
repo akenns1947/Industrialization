@@ -57,8 +57,13 @@ volumes <- volumes %>%
 
 
 ```{r Regressions}
-mod1 <- volumes %>% group_by(bin_20) %>%
-  do(x = lm(optimism_percentile ~ Science*Religion*industry_percentile + Science*Political.Economy*industry_percentile + Religion*Political.Economy*industry_percentile - Religion, data = .))
+# mod1 <- volumes %>% group_by(bin_20) %>%
+#   do(x = lm(optimism_percentile ~ Science*Religion*industry_percentile + Science*Political.Economy*industry_percentile + Religion*Political.Economy*industry_percentile - Religion, data = .))
+
+
+mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin_20, Science, 1610) + i(bin_20, Religion, 1610) + i(bin_20, Political.Economy, 1610) + i(bin_20, Science*Religion, 1610) + i(bin_20, Science*Political.Economy, 1610) + i(bin_20, Political.Economy*Religion, 1610), data = volumes)
+
+etable(mod)
 ```
 
 
