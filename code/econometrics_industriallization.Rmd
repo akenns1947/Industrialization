@@ -78,23 +78,54 @@ for (i in 1:length(bins)){
 
 omit <- c("(Intercept)|Science:Religion")
 
+rename <- c("Political.Economy" = "PolitEcon", "industry_percentile" = "Industry",
+            "Science:Religion" = "$\\text{Science} \\times \\text{Religion}$", "Science:industry_percentile" = "$\\text{Science} \\times \\text{Industry}$", "Religion:industry_percentile" = "$\\text{Religion} \\times \\text{Industry}$", "Science:Political.Economy" = "$\\text{Science} \\times \\text{PolitEcon}$", "Religion:Political.Economy" = "$\\text{Religion} \\times \\text{PolitEcon}$", "Science:Religion:industry_percentile" = "$\\text{Science} \\times \\text{Religion} \\times \\text{Industry}$", "Science:industry_percentile:Political.Economy" = "$\\text{Science} \\times \\text{PolitEcon} \\times \\text{Industry}$", "Religion:industry_percentile:Political.Economy" = "$\\text{Religion} \\times \\text{PolitEcon} \\times \\text{Industry}$")
+
 cm <- c("Science:Religion:industry_percentile" = "$\\text{Science} \\times \\text{Religion} \\times \\text{Industry}$", "Science:industry_percentile:Political.Economy" = "$\\text{Science} \\times \\text{PolitEcon} \\times \\text{Industry}$", "Religion:industry_percentile:Political.Economy" = "$\\text{Religion} \\times \\text{PolitEcon} \\times \\text{Industry}$")
+
+# modelsummary(models[1:8],
+#              stars = TRUE,
+#              gof_omit = "R2 Within|R2 P|Log|AIC|BIC|RMSE",
+#              coef_map = cm,
+#              title = "Dependent Variable: Optimism Percentile",
+#              escape = FALSE,
+#              threeparttable=TRUE,
+#              output="../output/mod1_1.tex"
+#              )
+# 
+# modelsummary(models[9:15],
+#              stars = TRUE,
+#              gof_omit = "R2 Within|R2 P|Log|AIC|BIC|RMSE",
+#              coef_map = cm,
+#              title = "Dependent Variable: Optimism Percentile",
+#              escape = FALSE,
+#              threeparttable = TRUE,
+#              notes = "All lower-order interactions and independent variables included. Regressions are binned for every 20 years (+/-) 10 years. Standard errors in parenthesis.",
+#              output="../output/mod1_2.tex"
+#              )
+
 
 modelsummary(models[1:8],
              stars = TRUE,
              gof_omit = "R2 Within|R2 P|Log|AIC|BIC|RMSE",
-             coef_map = cm,
+             coef_rename = rename,
              title = "Dependent Variable: Optimism Percentile",
-             output="../output/mod1_1.tex",
-             escape = FALSE)
+             escape = FALSE,
+             threeparttable=TRUE,
+             output="../output/mod1_1.tex"
+             )
 
 modelsummary(models[9:15],
              stars = TRUE,
              gof_omit = "R2 Within|R2 P|Log|AIC|BIC|RMSE",
-             coef_map = cm,
+             coef_rename = rename,
              title = "Dependent Variable: Optimism Percentile",
-             output="../output/mod1_2.tex",
-             escape = FALSE)
+             escape = FALSE,
+             threeparttable = TRUE,
+             notes = "All lower-order interactions and independent variables included. Regressions are binned for every 20 years (+/-) 10 years. Standard errors in parenthesis.",
+             output="../output/mod1_2.tex"
+             )
+
 
 ```
 

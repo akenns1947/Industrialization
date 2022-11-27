@@ -53,7 +53,7 @@ for (i in label){
   
   fig <- ggplot(df, aes(x = industry_percentile, y = optimism_percentile)) +
     # geom_point(alpha = .1) +
-    geom_smooth(method = "lm", se = FALSE) +
+    geom_smooth(method = "lm", formula = y~poly(x,2), se = FALSE) +
     xlim(0,1) +
     # ylim(0.25,0.7) +
     stat_binscatter(color = "red", geom = "pointrange") +
@@ -65,6 +65,32 @@ for (i in label){
   path <- sprintf('../output/bin_scatters/%s.png', i)
   ggsave(path)
 }
+```
+
+```{r Plots with volumes}
+for (i in label){
+  df <- data %>% filter(year_group == i)
+  
+  fig <- ggplot(df, aes(x = industry_percentile, y = optimism_percentile)) +
+    geom_point(alpha = .1, size = 1) +
+    geom_smooth(method = "lm", formula = y~poly(x,2), se = FALSE) +
+    # xlim(0,1) +
+    # ylim(-0.1,0.1) +
+    stat_binscatter(color = "red", geom = "pointrange") +
+    labs(title = i, x = "Industry (Percentile)", y = "Optimism (Percentile)") +
+    theme_bw()
+  
+  
+  show(fig)
+  path <- sprintf('../output/bin_scatters/with_points/%s.png', i)
+  ggsave(path)
+}
+
+```
+
+
+```{r Count unique}
+length(which(data$Optimism == 0))
 ```
 
 
