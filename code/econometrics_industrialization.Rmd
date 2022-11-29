@@ -52,24 +52,32 @@ volumes <- merge(volumes, rounded, by.x = "Year_rounded", by.y = "merge")
 #Remove unnecessary column
 volumes <- volumes %>%
   subset(select = -c(i.Value)) %>%
-  rename(bin_20 = Value)
+  rename(bin = Value)
 ```
 
 
 ```{r Regressions}
-mod1 <- volumes %>% group_by(bin_20) %>%
+mod1 <- volumes %>% group_by(bin) %>%
   do(x = lm(optimism_percentile ~ Science*Religion*industry_percentile + Science*Political.Economy*industry_percentile + Religion*Political.Economy*industry_percentile - Religion, data = .))
 
 #
-mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin_20, Science, 1610) + i(bin_20, Religion, 1610) + i(bin_20, Political.Economy, 1610) + i(bin_20, Science*Religion, 1610) + i(bin_20, Science*Political.Economy, 1610) + i(bin_20, Political.Economy*Religion, 1610), data = volumes)
+# mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, Science, 1610) + i(bin, Religion, 1610) + i(bin, Political.Economy, 1610) + i(bin, Science*Religion, 1610) + i(bin, Science*Political.Economy, 1610) + i(bin, Political.Economy*Religion, 1610) | bin, data = volumes)
 
-# mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin_20, Science) + i(bin_20, Religion) + i(bin_20, Political.Economy) + i(bin_20, Science*Religion) + i(bin_20, Science*Political.Economy) + i(bin_20, Political.Economy*Religion), data = volumes)
+mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, Science, 1610) + i(bin, Political.Economy, 1610) + i(bin, Science*Religion, 1610) + i(bin, Science*Political.Economy, 1610) + i(bin, Political.Economy*Religion, 1610) + i(bin), data = volumes)
+
+# mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, Science) + i(bin, Political.Economy) + i(bin, Science*Religion) + i(bin, Science*Political.Economy) + i(bin, Political.Economy*Religion) + i(bin), data = volumes)
 
 etable(mod)
 ```
+```{r Extract FE coefficients}
+fixef(mod)
+```
+
 
 ```{r Get coefficients}
-coef(mod)
+modelsummary(mod,
+             stars = TRUE,
+             output = "../output/optimism_results_2.txt")
 ```
 
 
