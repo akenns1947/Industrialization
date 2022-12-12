@@ -19,6 +19,7 @@ library(broom)
 library(modelsummary)
 library(msm)
 library(ggpubr)
+library(reshape2)
 
 ```
 
@@ -33,7 +34,7 @@ volumes <- volumes[,-1] #Drops 'X' which is just the index attached by Python
 
 ```{r Create years and bins}
 years <- seq(1510,1890, by=1)
-bins <- seq(1610, 1890, by = 20)
+bins <- seq(1510, 1890, by = 20)
 ```
 
 ```{r Assign volumes to bins}
@@ -63,14 +64,69 @@ mod1 <- volumes %>% group_by(bin) %>%
 #
 # mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, Science, 1610) + i(bin, Religion, 1610) + i(bin, Political.Economy, 1610) + i(bin, Science*Religion, 1610) + i(bin, Science*Political.Economy, 1610) + i(bin, Political.Economy*Religion, 1610) | bin, data = volumes)
 
-mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, Science, 1610) + i(bin, Political.Economy, 1610) + i(bin, Science*Religion, 1610) + i(bin, Science*Political.Economy, 1610) + i(bin, Political.Economy*Religion, 1610) + i(bin), data = volumes)
+#drop obs before 1610 bin
+volumes_1 <- volumes %>%
+  filter(bin >= 1610)
+
+mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, Science, 1610) + i(bin, Political.Economy, 1610) + i(bin, Science*Religion, 1610) + i(bin, Science*Political.Economy, 1610) + i(bin, Political.Economy*Religion, 1610) + i(bin, ref = 1610) - Religion, data = volumes_1)
 
 # mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, Science) + i(bin, Political.Economy) + i(bin, Science*Religion) + i(bin, Science*Political.Economy) + i(bin, Political.Economy*Religion) + i(bin), data = volumes)
 
 etable(mod)
 ```
-```{r Extract FE coefficients}
-fixef(mod)
+```{r Group results by year and variable}
+estimates <- tibble::rownames_to_column(mod$coeftable, "coefficient")
+
+#parse variable names into FEs and dep vars
+
+
+estimates <- estimates %>%
+  mutate(coefficient = str_remove(coefficient, "bin::")) %>%
+  mutate(coefficient = str_replace(coefficient, '^([^0-9:]*):([^0-9:]*)$', '\\1 * \\2')) %>%
+  mutate(split = strsplit(coefficient, ':')) %>%
+  mutate(year = sapply(split, function(x) x[1]),
+         variable = ifelse(sapply(split, length) == 2, sapply(split, function(x) x[2]), sapply(split, function(x) x[1]))) %>%
+  select(-split)
+
+estimates <- estimates %>%
+  mutate(variable = ifelse(is.na(as.numeric(variable)), variable, "(Intercept)")) %>%
+  mutate(year = ifelse(is.na(as.numeric(year)), '0', year))
+
+
+
+# estimates <- estimates %>%
+#   mutate(coefficient = str_remove(coefficient, "bin::")) %>%
+#   mutate(split = strsplit(coefficient, ':')) %>%
+#   mutate(year = ifelse(sapply(split, length) == 2, sapply(split, function(x) x[1]), '0'),
+#          variable = ifelse(sapply(split, length) == 2, sapply(split, function(x) x[2]), sapply(split, function(x) x[1]))) %>%
+#   select(-split)
+# 
+# estimates <- estimates %>%
+#   mutate(variable = ifelse(is.na(as.numeric(year)), paste(year, variable, sep = ' * '), variable)) %>%
+#   mutate(year = ifelse(is.na(as.numeric(year)), '0', year))
+
+
+# estimates <- estimates %>%
+#   mutate(coefficient = str_remove(coefficient, "bin::")) %>%
+#   separate_wider_delim(col = coefficient, into = c("year", "variable"), sep = "^(\\d{4}):([a-zA-Z]+)$|^([a-zA-Z]+):(\\d{4})$|^([a-zA-Z]+):([a-zA-Z]+)$", remove = FALSE, convert = TRUE, names = c("year", "variable", NA, NA, "variable", "variable"))
+
+# # If 'firstword' is not a number, move it to the 'secondword' column along with the original 'secondword' string
+# df <- df %>%
+#   mutate(secondword = ifelse(is.na(as.numeric(firstword)), paste(firstword, secondword, sep = ":"), secondword))
+# 
+# # Keep only the rows where 'firstword' is a number
+# df <- df %>%
+#   filter(!is.na(as.numeric(firstword)))
+
+estimates
+```
+
+```{r Reshape coefficients and std errors into dfs}
+coefs <- dcast(estimates, variable ~ year, value.var = "Estimate")
+std_errs <- dcast(estimates, variable ~ year, value.var = "Std. Error")
+  # Create a new data frame with 'firstword' as the columns and 'secondword' as the rows
+df_new <- dcast(df, secondword ~ firstword, value.var = "data")
+
 ```
 
 
@@ -149,7 +205,21 @@ modelsummary(models[9:15],
 ```
 
 
+```{r ChatGPT snippets}
+# If 'firstword' is not a number, move it to the 'secondword' column along with the original 'secondword' string
+df <- df %>%
+  mutate(secondword = ifelse(is.na(as.numeric(firstword)), paste(firstword, secondword, sep = ":"), secondword))
 
+# Keep only the rows where 'firstword' is a number
+df <- df %>%
+  filter(!is.na(as.numeric(firstword)))
+
+# Load the reshape2 package
+library(reshape2)
+
+# Create a new data frame with 'firstword' as the columns and 'secondword' as the rows
+df_new <- dcast(df, secondword ~ firstword, value.var = "data")
+```
 
 
 
