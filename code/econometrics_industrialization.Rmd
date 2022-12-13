@@ -20,6 +20,7 @@ library(modelsummary)
 library(msm)
 library(ggpubr)
 library(reshape2)
+library(kableExtra)
 
 ```
 
@@ -70,9 +71,11 @@ volumes_1 <- volumes %>%
 
 mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, Science, 1610) + i(bin, Political.Economy, 1610) + i(bin, Science*Religion, 1610) + i(bin, Science*Political.Economy, 1610) + i(bin, Political.Economy*Religion, 1610) + i(bin, ref = 1610) - Religion, data = volumes_1)
 
+mod_no_interactions <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, ref = 1610) - Religion, data = volumes_1)
+
 # mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, Science) + i(bin, Political.Economy) + i(bin, Science*Religion) + i(bin, Science*Political.Economy) + i(bin, Political.Economy*Religion) + i(bin), data = volumes)
 
-etable(mod)
+etable(mod_no_interactions)
 ```
 ```{r Group results by year and variable}
 estimates <- tibble::rownames_to_column(mod$coeftable, "coefficient")
@@ -82,15 +85,15 @@ estimates <- tibble::rownames_to_column(mod$coeftable, "coefficient")
 
 estimates <- estimates %>%
   mutate(coefficient = str_remove(coefficient, "bin::")) %>%
-  mutate(coefficient = str_replace(coefficient, '^([^0-9:]*):([^0-9:]*)$', '\\1 * \\2')) %>%
+  mutate(coefficient = str_replace(coefficient, '^([^0-9:]*):([^0-9:]*)$', '\\1 * \\2')) %>% #Format interactions correctly
   mutate(split = strsplit(coefficient, ':')) %>%
   mutate(year = sapply(split, function(x) x[1]),
-         variable = ifelse(sapply(split, length) == 2, sapply(split, function(x) x[2]), sapply(split, function(x) x[1]))) %>%
+         variable = ifelse(sapply(split, length) == 2, sapply(split, function(x) x[2]), sapply(split, function(x) x[1]))) %>% #assign years and variables to correct columns
   select(-split)
 
 estimates <- estimates %>%
   mutate(variable = ifelse(is.na(as.numeric(variable)), variable, "(Intercept)")) %>%
-  mutate(year = ifelse(is.na(as.numeric(year)), '0', year))
+  mutate(year = ifelse(is.na(as.numeric(year)), 'Reference', year))
 
 
 
@@ -122,18 +125,69 @@ estimates
 ```
 
 ```{r Reshape coefficients and std errors into dfs}
+#variables as rows and years as columns
 coefs <- dcast(estimates, variable ~ year, value.var = "Estimate")
+coefs <- coefs %>%
+  relocate("Reference", .after = "variable") %>%
+  arrange(str_length(variable), variable) %>%
+  arrange(variable != "(Intercept)")
+
 std_errs <- dcast(estimates, variable ~ year, value.var = "Std. Error")
-  # Create a new data frame with 'firstword' as the columns and 'secondword' as the rows
-df_new <- dcast(df, secondword ~ firstword, value.var = "data")
+std_errs <- std_errs %>%
+  relocate("Reference", .after = "variable") %>%
+  arrange(str_length(variable), variable) %>%
+  arrange(variable != "(Intercept)")
+
 
 ```
 
+```{r Get output into models to be compatible with modelsummary}
+models <- list()
 
-```{r Get coefficients}
-modelsummary(mod,
+for (i in 2:ncol(coefs)){
+
+model <- list()
+
+class(model) <- "custom"
+
+tidy.custom <- function(x, ...) {
+  data.frame(
+    term = coefs$variable,
+    estimate = coefs[[i]],
+    std.error = std_errs[[i]]
+  )
+}
+
+if (i == 2) {
+
+glance.custom <- function(x, ...) {
+  data.frame(
+    "nobs" = mod$nobs
+  )
+}
+} else{
+  glance.custom <- function(x, ...) {
+    data.frame(
+      "nobs" = " "
+    )
+  }
+}
+models[[colnames(coefs)[[i]]]] <- modelsummary(model, output = "modelsummary_list")
+}
+
+```
+```{r ModelSummary Tables}
+
+```
+
+```{r KableExtra tables}
+kbl(coefs, booktabs = T)
+```
+
+```{r Raw FE regression output}
+modelsummary(mod_no_interactions,
              stars = TRUE,
-             output = "../output/optimism_results_2.txt")
+             output = "../output/optimism_results_no_interactions.txt")
 ```
 
 
@@ -221,6 +275,33 @@ library(reshape2)
 df_new <- dcast(df, secondword ~ firstword, value.var = "data")
 ```
 
+```{r Code Playground}
+models <- list()
+
+
+
+model <- list()
+
+class(model) <- "custom"
+
+tidy.custom <- function(x, ...) {
+  data.frame(
+    term = coefs$variable,
+    estimate = coefs[[2]],
+    std.error = std_errs[[2]]
+  )
+}
+
+
+glance.custom <- function(x, ...) {
+  data.frame(
+    "nobs" = mod$nobs
+  )
+}
+
+modelsummary(model)
+
+```
 
 
 
