@@ -125,18 +125,34 @@ estimates
 ```
 
 ```{r Reshape coefficients and std errors into dfs}
-#variables as rows and years as columns
-coefs <- dcast(estimates, variable ~ year, value.var = "Estimate")
-coefs <- coefs %>%
-  relocate("Reference", .after = "variable") %>%
-  arrange(str_length(variable), variable) %>%
-  arrange(variable != "(Intercept)")
 
-std_errs <- dcast(estimates, variable ~ year, value.var = "Std. Error")
-std_errs <- std_errs %>%
-  relocate("Reference", .after = "variable") %>%
-  arrange(str_length(variable), variable) %>%
-  arrange(variable != "(Intercept)")
+transform_estimates <- function(df, stat){
+  transformed <- dcast(df, variable ~ year, value.var = stat)
+  
+  transformed <- transformed %>%
+    relocate("Reference", .after = "variable") %>%
+    arrange(str_length(variable), variable) %>%
+    arrange(variable != "(Intercept)")
+  
+  return(transformed)
+}
+
+coefs <- transform_estimates(estimates, "Estimate")
+std_errs <- transform_estimates(estimates, "Std. Error")
+pvalue <- transform_estimates(estimates, "Pr(>|t|)")
+#variables as rows and years as columns
+# coefs <- dcast(estimates, variable ~ year, value.var = "Estimate")
+# coefs <- coefs %>%
+#   relocate("Reference", .after = "variable") %>%
+#   arrange(str_length(variable), variable) %>%
+#   arrange(variable != "(Intercept)")
+# 
+# std_errs <- dcast(estimates, variable ~ year, value.var = "Std. Error")
+# std_errs <- std_errs %>%
+#   relocate("Reference", .after = "variable") %>%
+#   arrange(str_length(variable), variable) %>%
+#   arrange(variable != "(Intercept)")
+
 
 
 ```
@@ -154,7 +170,8 @@ tidy.custom <- function(x, ...) {
   data.frame(
     term = coefs$variable,
     estimate = coefs[[i]],
-    std.error = std_errs[[i]]
+    std.error = std_errs[[i]],
+    p.value = pvalue[[i]]
   )
 }
 
@@ -162,7 +179,9 @@ if (i == 2) {
 
 glance.custom <- function(x, ...) {
   data.frame(
-    "nobs" = mod$nobs
+    "nobs" = mod$nobs,
+    "r.squared" = glance(mod)$r.squared
+    # "adj.r.squared" = glance(mod)$adj.r.squared
   )
 }
 } else{
@@ -176,8 +195,10 @@ models[[colnames(coefs)[[i]]]] <- modelsummary(model, output = "modelsummary_lis
 }
 
 ```
-```{r ModelSummary Tables}
 
+
+```{r ModelSummary Tables}
+modelsummary(models, output = "markdown", stars = TRUE)
 ```
 
 ```{r KableExtra tables}
