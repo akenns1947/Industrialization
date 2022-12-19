@@ -75,9 +75,9 @@ mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Politic
 #model with bin FE entering alone
 # mod_no_interactions <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, ref = 1610) - Religion, data = volumes_1)
 
-
-
-etable(mod_no_interactions)
+# 
+# 
+# etable(mod_no_interactions)
 ```
 ```{r Group results by year and variable}
 estimates <- tibble::rownames_to_column(mod$coeftable, "coefficient")
@@ -137,7 +137,8 @@ tidy.custom <- function(x, ...) {
   )
 }
 
-if (i == 2) {
+#10 because that is the first model in the second of the split results table. Need to change to 2 if going for one continuous table
+if (i == 10) {
 
 glance.custom <- function(x, ...) {
   data.frame(
@@ -149,7 +150,6 @@ glance.custom <- function(x, ...) {
 } else{
   glance.custom <- function(x, ...) {
     data.frame(
-      "nobs" = " "
     )
   }
 }
@@ -161,7 +161,7 @@ models[[colnames(coefs)[[i]]]] <- modelsummary(model, output = "modelsummary_lis
 
 ```{r Main results table}
 rename <- c("Political.Economy" = "PolitEcon", "industry_percentile" = "Industry",
-            "Science * Religion" = "$\\text{Science} \\times \\text{Religion}$", "Science:industry_percentile" = "$\\text{Science} \\times \\text{Industry}$", "Religion:industry_percentile" = "$\\text{Religion} \\times \\text{Industry}$", "Science * Political.Economy" = "$\\text{Science} \\times \\text{PolitEcon}$", "Religion:Political.Economy" = "$\\text{Religion} \\times \\text{PolitEcon}$", "Science:Religion:industry_percentile" = "$\\text{Science} \\times \\text{Religion} \\times \\text{Industry}$", "Science:industry_percentile:Political.Economy" = "$\\text{Science} \\times \\text{PolitEcon} \\times \\text{Industry}$", "Religion:industry_percentile:Political.Economy" = "$\\text{Religion} \\times \\text{PolitEcon} \\times \\text{Industry}$")
+            "Science * Religion" = "$\\text{Science} \\times \\text{Religion}$", "Science:industry_percentile" = "$\\text{Science} \\times \\text{Industry}$", "Religion:industry_percentile" = "$\\text{Religion} \\times \\text{Industry}$", "Science * Political.Economy" = "$\\text{Science} \\times \\text{PolitEcon}$", "Political.Economy * Religion" = "$\\text{Religion} \\times \\text{PolitEcon}$", "Science:Religion:industry_percentile" = "$\\text{Science} \\times \\text{Religion} \\times \\text{Industry}$", "Science:industry_percentile:Political.Economy" = "$\\text{Science} \\times \\text{PolitEcon} \\times \\text{Industry}$", "Religion:industry_percentile:Political.Economy" = "$\\text{Religion} \\times \\text{PolitEcon} \\times \\text{Industry}$")
 
 modelsummary(models, output = "markdown", stars = TRUE)
 
@@ -184,6 +184,16 @@ modelsummary(models[9:15],
              threeparttable = TRUE,
              notes = "Volumes are placed into 20 year ((+/-) 10 year) bins. Columns represent interactions between bin fixed effects and the variables of interest (rows). Observations prior to 1600 are dropped. Standard errors in parenthesis.",
              output="../output/optimism_2.tex"
+             )
+
+modelsummary(models,
+             stars = TRUE,
+             coef_rename = rename,
+             title = "Dependent Variable: Optimism Percentile",
+             escape = FALSE,
+             threeparttable = TRUE,
+             notes = "Volumes are placed into 20 year ((+/-) 10 year) bins. Columns represent interactions between bin fixed effects and the variables of interest (rows). Observations prior to 1600 are dropped. Standard errors in parenthesis.",
+             output="../output/optimism_combined.tex"
              )
 
 

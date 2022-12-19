@@ -112,7 +112,9 @@ for (i in 2:ncol(coefs)){
       p.value = pvalue[[i]]
     )
   }
-  if (i == 2) {
+  
+  #10 because that is the first model in the second half of results. No way to generalize, is what it is given how we are presenting results. Change to 2 for a generalized results table.
+  if (i == 10) {
     glance.custom <- function(x, ...) {
       data.frame(
         "nobs" = mod$nobs,
@@ -123,7 +125,6 @@ for (i in 2:ncol(coefs)){
   } else{
     glance.custom <- function(x, ...) {
       data.frame(
-        "nobs" = " "
       )
     }
   }
@@ -133,7 +134,7 @@ for (i in 2:ncol(coefs)){
 
 #Modelsummary table
 
-cm <- c('science_dummy' = '$\\mathds{1}(\\text{Science})$', 'religion_dummy' = '$\\mathds{1}(\\text{Religion})$', 'political.economy_dummy' = '$\\mathds{1}(\\text{PolitEcon})$', 'science_dummy:Religion' = '$\\mathds{1}(\\text{Science}) \\times \\text{Religion}$', 'science_dummy:Politics' = '$\\mathds{1}(\\text{Science}) \\times \\text{PolitEcon}$', 'Politics:religion_dummy' = '$\\mathds{1}(\\text{Religion}) \\times \\text{PolitEcon}$','religion_dummy:Science' = '$\\mathds{1}(\\text{Religion}) \\times \\text{Science}$', 'political.economy_dummy:Religion' = '$\\mathds{1}(\\text{PolitEcon}) \\times \\text{Religion}$', 'political.economy_dummy:Science' = '$\\mathds{1}(\\text{PolitEcon}) \\times \\text{Science}$') #Coefficient map
+cm <- c('science_dummy' = '$\\mathds{1}(\\text{Science})$', 'religion_dummy' = '$\\mathds{1}(\\text{Religion})$', 'political.economy_dummy' = '$\\mathds{1}(\\text{PolitEcon})$', 'science_dummy * Religion' = '$\\mathds{1}(\\text{Science}) \\times \\text{Religion}$', 'science_dummy * Political.Economy' = '$\\mathds{1}(\\text{Science}) \\times \\text{PolitEcon}$', 'religion_dummy * Political.Economy' = '$\\mathds{1}(\\text{Religion}) \\times \\text{PolitEcon}$','religion_dummy * Science' = '$\\mathds{1}(\\text{Religion}) \\times \\text{Science}$', 'political.economy_dummy * Religion' = '$\\mathds{1}(\\text{PolitEcon}) \\times \\text{Religion}$', 'political.economy_dummy * Science' = '$\\mathds{1}(\\text{PolitEcon}) \\times \\text{Science}$') #Coefficient map
 
 modelsummary(models[1:8],
              stars = TRUE,
@@ -151,7 +152,13 @@ modelsummary(models[9:15],
              notes = "Volumes are placed into 20 year ((+/-) 10 year) bins. Columns represent interactions between bin fixed effects and the variables of interest (rows). Observations prior to 1600 are dropped. Independent variables are indicators that take on a value of one for the highest weighted category for each volume. Standard errors in parenthesis.",
              output = "../output/mod_dummies_2.tex")
 
-
+modelsummary(models,
+             stars = TRUE,
+             coef_rename = cm,
+             escape = FALSE,
+             threeparttable = TRUE,
+             notes = "Volumes are placed into 20 year ((+/-) 10 year) bins. Columns represent interactions between bin fixed effects and the variables of interest (rows). Observations prior to 1600 are dropped. Independent variables are indicators that take on a value of one for the highest weighted category for each volume. Standard errors in parenthesis.",
+             output = "../output/mod_dummies_combined.tex")
 
 
 
