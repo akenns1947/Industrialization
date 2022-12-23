@@ -50,11 +50,13 @@ volumes <- volumes %>%
 #model
 mod <- feols(optimism_percentile ~ Science +
                Political.Economy +
+               industry_percentile +
                Science*Political.Economy +
                Science*Religion +
                Religion*Political.Economy +
                Science*industry_percentile +
                Political.Economy*industry_percentile +
+               # Religion*industry_percentile +
                Science*Political.Economy*industry_percentile +
                Science*Religion*industry_percentile +
                Religion*Political.Economy*industry_percentile +
@@ -63,15 +65,20 @@ mod <- feols(optimism_percentile ~ Science +
                i(bin, industry_percentile, 1610) +
                i(bin, Science*Religion, 1610) +
                i(bin, Science*Political.Economy, 1610) +
-               i(bin, Political.Economy*Religion, 1610) + 
+               i(bin, Political.Economy*Religion, 1610) +
                i(bin, Science*industry_percentile, 1610) +
                i(bin, Political.Economy*industry_percentile, 1610) +
-               i(bin, Religion*industry_percentile, 1610) +
+               # i(bin, Religion*industry_percentile, 1610) +
                i(bin, Science*Political.Economy*industry_percentile, 1610) +
                i(bin, Science*Religion*industry_percentile, 1610) +
                i(bin, Religion*Political.Economy*industry_percentile, 1610) +
                i(bin, ref = 1610) - Religion - Religion*industry_percentile + industry_percentile,
              data = volumes)
+
+# mod <- feols(optimism_percentile ~
+#         i(bin, Science*Religion*industry_percentile, 1610) +
+#         i(bin, Science*Political.Economy*industry_percentile, 1610) +
+#         i(bin, Religion*Political.Economy*industry_percentile, 1610), data = volumes)
 
 etable(mod)
 
@@ -188,7 +195,7 @@ modelsummary(models,
              output = "../output/mod_industry_combined.tex")
 
 
-modelsummary(models)
+modelsummary(models, stars = TRUE)
 
 
 
