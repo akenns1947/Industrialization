@@ -1,16 +1,10 @@
----
-title: "econometrics_industrialization"
-author: "Austin Kennedy"
-date: "11/15/2022"
-output: html_document
----
 
-```{r Clear memory and setup}
+#Clear memory and setup
 rm(list=ls())
 options(scipen=999)
-```
 
-```{r Load Packages}
+
+#Load Packages
 
 library(tidyverse)
 library(fixest)
@@ -22,23 +16,23 @@ library(ggpubr)
 library(reshape2)
 library(kableExtra)
 
-```
 
 
-```{r Load Data}
+
+#Load Data
 volumes <- read.csv('../temporary/volumes_opt_industry.csv')
-```
 
-```{r Clean up}
+
+#Clean up
 volumes <- volumes[,-1] #Drops 'X' which is just the index attached by Python
-```
 
-```{r Create years and bins}
+
+#Create years and bins
 years <- seq(1510,1890, by=1)
 bins <- seq(1510, 1890, by = 20)
-```
 
-```{r Assign volumes to bins}
+
+#Assign volumes to bins
 volumes <- volumes[volumes$Year_rounded >= (min(bins) - 10),]
 #Merge volume years to closest bin
 a = data.table(Value=volumes$Year_rounded) #Extract years
@@ -61,10 +55,10 @@ volumes_1 <- volumes %>%
   filter(bin >= 1610)
 
 
-```
 
 
-```{r Regressions}
+
+#Regressions
 
 
 mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Political.Economy + Science*Religion + Religion*Political.Economy + i(bin, Science, 1610) + i(bin, Political.Economy, 1610) + i(bin, Science*Religion, 1610) + i(bin, Science*Political.Economy, 1610) + i(bin, Political.Economy*Religion, 1610) + i(bin, ref = 1610) - Religion, data = volumes_1)
@@ -78,8 +72,8 @@ mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Politic
 # 
 # 
 # etable(mod_no_interactions)
-```
-```{r Group results by year and variable}
+
+#Group results by year and variable
 estimates <- tibble::rownames_to_column(mod$coeftable, "coefficient")
 
 #parse variable names into FEs and dep vars
@@ -98,9 +92,9 @@ estimates <- estimates %>%
   mutate(year = ifelse(is.na(as.numeric(year)), 'Reference', year))
 
 estimates
-```
 
-```{r Reshape coefficients and std errors into dfs}
+
+#Reshape coefficients and std errors into dfs
 
 transform_estimates <- function(df, stat){
   transformed <- dcast(df, variable ~ year, value.var = stat)
@@ -117,49 +111,48 @@ coefs <- transform_estimates(estimates, "Estimate")
 std_errs <- transform_estimates(estimates, "Std. Error")
 pvalue <- transform_estimates(estimates, "Pr(>|t|)")
 
-```
 
-```{r Get output into models to be compatible with modelsummary}
+
+#Get output into models to be compatible with modelsummary
 models <- list()
 
 for (i in 2:ncol(coefs)){
-
-model <- list()
-
-class(model) <- "custom"
-
-tidy.custom <- function(x, ...) {
-  data.frame(
-    term = coefs$variable,
-    estimate = coefs[[i]],
-    std.error = std_errs[[i]],
-    p.value = pvalue[[i]]
-  )
-}
-
-#10 because that is the first model in the second of the split results table. Need to change to 2 if going for one continuous table
-if (i == 10) {
-
-glance.custom <- function(x, ...) {
-  data.frame(
-    "nobs" = mod$nobs,
-    "r.squared" = glance(mod)$r.squared
-    # "adj.r.squared" = glance(mod)$adj.r.squared
-  )
-}
-} else{
-  glance.custom <- function(x, ...) {
+  
+  model <- list()
+  
+  class(model) <- "custom"
+  
+  tidy.custom <- function(x, ...) {
     data.frame(
+      term = coefs$variable,
+      estimate = coefs[[i]],
+      std.error = std_errs[[i]],
+      p.value = pvalue[[i]]
     )
   }
+  
+  #10 because that is the first model in the second of the split results table. Need to change to 2 if going for one continuous table
+  if (i == 10) {
+    
+    glance.custom <- function(x, ...) {
+      data.frame(
+        "nobs" = mod$nobs,
+        "r.squared" = glance(mod)$r.squared
+        # "adj.r.squared" = glance(mod)$adj.r.squared
+      )
+    }
+  } else{
+    glance.custom <- function(x, ...) {
+      data.frame(
+      )
+    }
+  }
+  models[[colnames(coefs)[[i]]]] <- modelsummary(model, output = "modelsummary_list")
 }
-models[[colnames(coefs)[[i]]]] <- modelsummary(model, output = "modelsummary_list")
-}
-
-```
 
 
-```{r Main results table}
+
+#r Main results table
 rename <- c("Political.Economy" = "PolitEcon", "industry_percentile" = "Industry",
             "Science * Religion" = "$\\text{Science} \\times \\text{Religion}$", "Science:industry_percentile" = "$\\text{Science} \\times \\text{Industry}$", "Religion:industry_percentile" = "$\\text{Religion} \\times \\text{Industry}$", "Science * Political.Economy" = "$\\text{Science} \\times \\text{PolitEcon}$", "Political.Economy * Religion" = "$\\text{Religion} \\times \\text{PolitEcon}$", "Science:Religion:industry_percentile" = "$\\text{Science} \\times \\text{Religion} \\times \\text{Industry}$", "Science:industry_percentile:Political.Economy" = "$\\text{Science} \\times \\text{PolitEcon} \\times \\text{Industry}$", "Religion:industry_percentile:Political.Economy" = "$\\text{Religion} \\times \\text{PolitEcon} \\times \\text{Industry}$")
 
@@ -172,7 +165,7 @@ modelsummary(models[1:8],
              escape = FALSE,
              threeparttable=TRUE,
              output="../output/optimism_1.tex"
-             )
+)
 
 #split into two to fit onto page
 
@@ -184,7 +177,7 @@ modelsummary(models[9:15],
              threeparttable = TRUE,
              notes = "Volumes are placed into 20 year ((+/-) 10 year) bins. Columns represent interactions between bin fixed effects and the variables of interest (rows). Observations prior to 1600 are dropped. Standard errors in parenthesis.",
              output="../output/optimism_2.tex"
-             )
+)
 
 modelsummary(models,
              stars = TRUE,
@@ -194,23 +187,20 @@ modelsummary(models,
              threeparttable = TRUE,
              notes = "Volumes are placed into 20 year ((+/-) 10 year) bins. Columns represent interactions between bin fixed effects and the variables of interest (rows). Observations prior to 1600 are dropped. Standard errors in parenthesis.",
              output="../output/optimism_combined.tex"
-             )
+)
 
 
-```
+#Marginal effects
 
+#transpose for easier computing
+coefs_t <- data.table::transpose(coefs, make.names = "variable", keep.names = "bin")
+std_errs_t <- data.table::transpose(std_errs, make.names = "variable", keep.names = "bin")
 
-```{r Raw FE regression output}
-modelsummary(mod_no_interactions,
-             stars = TRUE,
-             output = "../output/optimism_results_no_interactions.txt")
-```
+#initialize marginal effects dataframe
+marginal <- as_tibble(coefs_t$bin)
 
+deltamethod(~ x2, coef(mod), vcov(mod))
 
-```{r Code Playground}
-
-
-```
 
 
 
