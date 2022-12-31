@@ -76,6 +76,11 @@ mod <- feols(optimism_percentile ~ Science + Political.Economy + Science*Politic
 #Group results by year and variable
 estimates <- tibble::rownames_to_column(mod$coeftable, "coefficient")
 
+#add deltamethod variables
+
+estimates <- estimates %>%
+  mutate(ref = paste0("x", 1:length(estimates$coefficient)))
+
 #parse variable names into FEs and dep vars
 
 
@@ -91,7 +96,6 @@ estimates <- estimates %>%
   mutate(variable = ifelse(is.na(as.numeric(variable)), variable, "(Intercept)")) %>%
   mutate(year = ifelse(is.na(as.numeric(year)), 'Reference', year))
 
-estimates
 
 
 #Reshape coefficients and std errors into dfs
@@ -110,6 +114,7 @@ transform_estimates <- function(df, stat){
 coefs <- transform_estimates(estimates, "Estimate")
 std_errs <- transform_estimates(estimates, "Std. Error")
 pvalue <- transform_estimates(estimates, "Pr(>|t|)")
+refs <- transform_estimates(estimates, "ref")
 
 
 
@@ -195,11 +200,17 @@ modelsummary(models,
 #transpose for easier computing
 coefs_t <- data.table::transpose(coefs, make.names = "variable", keep.names = "bin")
 std_errs_t <- data.table::transpose(std_errs, make.names = "variable", keep.names = "bin")
+refs_t <- data.table::transpose(refs, make.names = "variable", keep.names = "bin")
 
 #initialize marginal effects dataframe
 marginal <- as_tibble(coefs_t$bin)
 
-deltamethod(~ x2, coef(mod), vcov(mod))
+marginal <- marginal %>%
+  mutate(s100 = coefs_t['Science'])
+
+formula <- sprintf("~ %s", refs[2,2])
+  
+deltamethod(as.formula(formula), coef(mod), vcov(mod))
 
 
 
