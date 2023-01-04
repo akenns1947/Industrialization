@@ -198,34 +198,17 @@ modelsummary(models,
 
 #Marginal effects
 
-#transpose for easier computing
-coefs_t <- data.table::transpose(coefs, make.names = "variable", keep.names = "bin")
-std_errs_t <- data.table::transpose(std_errs, make.names = "variable", keep.names = "bin")
-refs_t <- data.table::transpose(refs, make.names = "variable", keep.names = "bin")
+volumes_1$bin <- as.factor(volumes_1$bin)
 
-#initialize marginal effects dataframe
-marginal <- as_tibble(coefs_t$bin)
+bins <- as.factor(bins)
 
-
-marginal <- marginal %>%
-  mutate(s100 = coefs_t$Science,
-         s50r50 = coefs_t)
+model <- lm(optimism_percentile ~ Religion * Science * bin + Religion * Political.Economy * bin + Science * Political.Economy * bin + bin - Religion - Religion * bin + Political.Economy, volumes_1)
 
 
 
-get_marginal <- function(df, s, r, p){
-  tmp <- coefs_t$Science
-}
-  
-get_se <- function(df){
-  
-}
+summary(model)
 
-formula <- sprintf("~ %s", refs[2,2])
-  
-deltamethod(as.formula(formula), coef(mod), vcov(mod))
-
-
+summary(mod)
 
 
 
@@ -243,9 +226,9 @@ deltamethod(as.formula(formula), coef(mod), vcov(mod))
 
 volumes_1$bin <- as.factor(volumes_1$bin)
 
-model <- lm(optimism_percentile ~ Religion / Science / bin + Religion / Political.Economy / bin + Science / Political.Economy / bin + bin - Religion + Political.Economy, volumes_1)
-
-summary(model)
+# model <- lm(optimism_percentile ~ Religion / Science / bin + Religion / Political.Economy / bin + Science / Political.Economy / bin + bin - Religion + Political.Economy, volumes_1)
+# 
+# summary(model)
 
 model2 <- lm(optimism_percentile ~ Religion * Science * bin + Religion * Political.Economy * bin + Science * Political.Economy * bin + bin - Religion + Political.Economy - Political.Economy * bin, volumes_1)
 
@@ -254,7 +237,7 @@ summary(model2)
 model2 %>%
   margins(
     variables = "Science",
-    at = list(Religion = 0.5, Political.Economy = 0, bin = "1630")
-  ) %>%
+    at = list(Science = 0.5, Religion = 0.5, Political.Economy = 0, bin = bins)
+    ) %>%
   summary()
 
