@@ -200,44 +200,88 @@ modelsummary(models,
 
 volumes_1$bin <- as.factor(volumes_1$bin)
 
-bins <- as.factor(bins)
+bins <- as_factor(seq(1610, 1890, by = 20))
 
-model <- lm(optimism_percentile ~ Religion * Science * bin + Religion * Political.Economy * bin + Science * Political.Economy * bin + bin - Religion - Religion * bin + Political.Economy, volumes_1)
-
-
+model <- lm(optimism_percentile ~ Religion * Science * bin + Religion * Political.Economy * bin + Science * Political.Economy * bin - Religion - Religion * bin + Political.Economy + bin, volumes_1)
 
 summary(model)
 
-summary(mod)
-
-
-
-
-
-
-
-
-
-
-
-####CODE PLAYGROUND #####
-
-
-
-volumes_1$bin <- as.factor(volumes_1$bin)
-
-# model <- lm(optimism_percentile ~ Religion / Science / bin + Religion / Political.Economy / bin + Science / Political.Economy / bin + bin - Religion + Political.Economy, volumes_1)
-# 
-# summary(model)
-
-model2 <- lm(optimism_percentile ~ Religion * Science * bin + Religion * Political.Economy * bin + Science * Political.Economy * bin + bin - Religion + Political.Economy - Political.Economy * bin, volumes_1)
-
-summary(model2)
-
-model2 %>%
-  margins(
-    variables = "Science",
-    at = list(Science = 0.5, Religion = 0.5, Political.Economy = 0, bin = bins)
+#function for getting marginal effects
+get_marginal_science <- function(model, s, r, p){
+  tmp <- model %>%
+    margins(
+      variables = "Science",
+      at = list(Science = s, Religion = r, Political.Economy = p, bin = bins)
     ) %>%
-  summary()
+    summary()
+  
+  return(tmp)
+}
+
+s100_m <- get_marginal_science(model = model, s = 1, r = 0, p = 0)
+s50r50_m <- get_marginal_science(model = model, s = 0.5, r = 0.5, p = 0)
+s50p50_m <- get_marginal_science(model = model, s = 0.5, r = 0, p = 0.5)
+thirds_m <- get_marginal_science(model = model, s = 1/3, r = 1/3, p = 1/3)
+
+s100_m$label <- "100% Science"
+s50r50_m$label <- "50% Science 50% Religion"
+s50p50_m$label <- "50% Science 50% Political Economy"
+thirds_m$label <- "1/3 Each"
+
+s100_m$bin <- bins
+s50r50_m$bin <- bins
+s50p50_m$bin <- bins
+thirds_m$bin <- bins
+
+marg <- rbind(s100_m, s50r50_m, s50p50_m, thirds_m)
+
+marginal_fig <- ggplot(marg, aes(x = bin, y = AME, group = label)) +
+  geom_line(aes(color = label, linetype = label)) +
+  geom_ribbon(aes(y = AME, ymin = lower, ymax = upper, fill = label), alpha = 0.2) +
+  labs(title = "Marginal Effects", x = "Year", y = "Value") +
+  theme(legend.position = "none")
+
+show(marginal_fig)
+
+ggsave("../output/marginal_effects.png", width = 5.5)
+
+#Predicted Values
+
+pred <- function(lm, sci, rel, pol){
+  data <- data.frame(Science = sci, Political.Economy = pol, Religion = rel, bin = bins)
+  prediction <- predict(lm, newdata = data, interval = "confidence", se.fit =TRUE)
+  fit <- data.frame(prediction$fit)
+  return(fit)
+}
+
+
+
+s100_p <- pred(lm = model, sci = 1, rel = 0, pol = 0)
+s50r50_p <- pred(lm = model, sci = 0.5, rel = 0.5, pol = 0)
+s50p50_p <- pred(lm = model, sci = 0.5, rel = 0, pol = 0.5)
+thirds_p <- pred(lm = model, sci = 1/3, rel = 1/3, pol = 1/3)
+
+s100_p$label <- "100% Science"
+s50r50_p$label <- "50% Science 50% Religion"
+s50p50_p$label <- "50% Science 50% Political Economy"
+thirds_p$label <- "1/3 Each"
+
+s100_p$bin <- bins
+s50r50_p$bin <- bins
+s50p50_p$bin <- bins
+thirds_p$bin <- bins
+
+pred <- rbind(s100_p, s50r50_p, s50p50_p, thirds_p)
+
+predicted_fig <- ggplot(pred, aes(x = bin, y = fit, group = label)) +
+  geom_line(aes(color = label, linetype = label)) +
+  geom_ribbon(aes(y = fit, ymin = lwr, ymax = upr, fill = label), alpha = 0.2) +
+  labs(title = "Predicted Values", x = "Year", y = "Value")
+
+show(predicted_fig)
+
+ggsave("../output/predicted_values.png", width = 8)
+
+
+
 
