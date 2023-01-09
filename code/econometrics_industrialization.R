@@ -14,6 +14,7 @@ library(msm)
 library(ggpubr)
 library(reshape2)
 library(kableExtra)
+library(margins)
 
 #load data
 
@@ -197,20 +198,88 @@ modelsummary(models,
 
 modelsummary(models, stars = TRUE)
 
+volumes$bin <- as.factor(volumes$bin)
+
+bins <- as.factor(seq(1610, 1890, by = 20))
 
 
+model <- lm(optimism_percentile ~ Religion * Science * industry_percentile * bin + Religion * Political.Economy * industry_percentile * bin + Science * Political.Economy * industry_percentile * bin - Religion * industry_percentile * bin + bin + bin * industry_percentile, volumes)
+
+summary(mod)
+
+summary(model)
+
+#function for getting marginal effects
+get_marginal_science <- function(model, s, r, p, ind){
+  tmp <- model %>%
+    margins(
+      variables = "Science",
+      at = list(Science = s, Religion = r, Political.Economy = p, industry_percentile = ind, bin = bins)
+    ) %>%
+    summary()
+  
+  return(tmp)
+}
+
+s100_0 <- get_marginal_science(model = model, s = 1, r = 0, p = 0, ind = 0)
+s50r50_0 <- get_marginal_science(model = model, s = 0.5, r = 0.5, p = 0, ind = 0)
+s50p50_0 <- get_marginal_science(model = model, s = 0.5, r = 0, p = 0.5, ind = 0)
+thirds_0 <- get_marginal_science(model = model, s = 1/3, r = 1/3, p = 1/3, ind = 0)
 
 
+s100_1 <- get_marginal_science(model = model, s = 1, r = 0, p = 0, ind = 1)
+s50r50_1 <- get_marginal_science(model = model, s = 0.5, r = 0.5, p = 0, ind = 1)
+s50p50_1 <- get_marginal_science(model = model, s = 0.5, r = 0, p = 0.5, ind = 1)
+thirds_1 <- get_marginal_science(model = model, s = 1/3, r = 1/3, p = 1/3, ind = 1)
+
+s100_0$label <- "100% Science"
+s50r50_0$label <- "50% Science 50% Religion"
+s50p50_0$label <- "50% Science 50% Political Economy"
+thirds_0$label <- "1/3 Each"
+
+s100_1$label <- "100% Science"
+s50r50_1$label <- "50% Science 50% Religion"
+s50p50_1$label <- "50% Science 50% Political Economy"
+thirds_1$label <- "1/3 Each"
 
 
+s100_0$bin <- bins
+s50r50_0$bin <- bins
+s50p50_0$bin <- bins
+thirds_0$bin <- bins
+
+s100_1$bin <- bins
+s50r50_1$bin <- bins
+s50p50_1$bin <- bins
+thirds_1$bin <- bins
+
+marginal_0 <- rbind(s100_0, s50r50_0, s50p50_0, thirds_0)
+
+marginal_1 <- rbind(s100_1, s50r50_1, s50p50_1, thirds_1)
 
 
+#export/import figs, takes a while to run the marginal effects
+# 
+# write.csv(marginal_0, "../temporary/marginal_0.csv")
+# write.csv(marginal_1, "../temporary/marginal_1.csv")
 
+marginal_0 <- read.csv("../temporary/marginal_0.csv")
+marginal_1 <- read.csv("../temporary/marginal_1.csv")
 
+marginal_fig_0 <- ggplot(marginal_0, aes(x = bin, y = AME, group = label)) +
+  geom_line(aes(color = label, linetype = label)) +
+  geom_ribbon(aes(y = AME, ymin = lower, ymax = upper, fill = label), alpha = 0.2) +
+  labs(title = "Marginal Effects (Ind = 0)", x = "Year", y = "Value") +
+  theme(legend.position = "none")
 
+show(marginal_fig_0)
 
+marginal_fig_1 <- ggplot(marginal_1, aes(x = bin, y = AME, group = label)) +
+  geom_line(aes(color = label, linetype = label)) +
+  geom_ribbon(aes(y = AME, ymin = lower, ymax = upper, fill = label), alpha = 0.2) +
+  labs(title = "Marginal Effects (Ind = 1)", x = "Year", y = "Value") +
+  theme(legend.position = "none")
 
-
-
+show(marginal_fig_1)
 
 
